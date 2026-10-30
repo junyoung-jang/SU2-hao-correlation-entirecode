@@ -1262,6 +1262,7 @@ enum class LM_OPTIONS {
   MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
   MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
   MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  HAO,          /*!< \brief Kind of transition correlation model (Hao). */
   DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
 };
 
@@ -1273,7 +1274,9 @@ static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
   MakePair("KRAUSE", LM_OPTIONS::KRAUSE)
   MakePair("KRAUSE_HYPER", LM_OPTIONS::KRAUSE_HYPER)
   MakePair("MEDIDA_BAEDER", LM_OPTIONS::MEDIDA_BAEDER)
+  MakePair("MEDIDA", LM_OPTIONS::MEDIDA)
   MakePair("MENTER_LANGTRY", LM_OPTIONS::MENTER_LANGTRY)
+  MakePair("HAO", LM_OPTIONS::HAO)
   MakePair("DEFAULT", LM_OPTIONS::DEFAULT)
 };
 
@@ -1288,6 +1291,7 @@ enum class TURB_TRANS_CORRELATION {
   MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
   MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
   MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  HAO,          /*!< \brief Kind of transition correlation model (Hao). */
   DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
 };
 
@@ -1344,6 +1348,10 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
   }
   if (IsPresent(LM_OPTIONS::MENTER_LANGTRY)) {
     LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
+    NFoundCorrelations++;
+  }
+  if (IsPresent(LM_OPTIONS::HAO)) {
+    LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::HAO;
     NFoundCorrelations++;
   }
 
@@ -1513,7 +1521,8 @@ enum ENUM_HYBRIDRANSLES {
   SA_DES   = 1,          /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
   SA_DDES  = 2,          /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
   SA_ZDES  = 3,          /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
-  SA_EDDES = 4           /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+  SA_EDDES = 4,           /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+  SA_IDDES = 5
 };
 static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("NONE", NO_HYBRIDRANSLES)
@@ -1521,6 +1530,7 @@ static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("SA_DDES", SA_DDES)
   MakePair("SA_ZDES", SA_ZDES)
   MakePair("SA_EDDES", SA_EDDES)
+  MakePair("SA_IDDES", SA_IDDES)
 };
 
 /*!

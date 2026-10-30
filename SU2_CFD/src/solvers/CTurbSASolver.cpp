@@ -1626,6 +1626,61 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
         break;
       }
+     case SA_IDDES /*underbuilt(verifing)*/: {
+        /*--- Improved Delayed Detached Eddy Simulation (IDDES)
+         Shur et al., AIAA 2008-3843 ---*/
+
+
+         const su2double c_w = 0.15, c_l = 3.55, c_t = 1.63; /* verified */
+        
+         const su2double h_max = geometry->nodes->GetMaxLength(iPoint); /*delta_free*/
+
+        /*--- Wall-normal grid spacing, approximated by the largest jump of the
+              wall distance among the neighbours (wall-parallel edges give ~0). ---*/
+        su2double h_wn = 0.0;
+        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+          h_wn = max(h_wn, fabs(geometry->nodes->GetWall_Distance(jPoint) - wallDistance));
+        }
+
+        su2double maxDelta = min(max(max(c_w*wallDistance, c_w*h_max), h_wn), h_max);
+        if (LES_FilterWidth > 0.0){
+          maxDelta = LES_FilterWidth;
+        }
+        /* ----------------------------verified------------------------*/
+        const su2double r_dt = kinematicViscosityTurb/(max(uijuij, 1e-10)*k2*pow(wallDistance, 2.0));
+        const su2double r_dl = kinematicViscosity   /(max(uijuij, 1e-10)*k2*pow(wallDistance, 2.0));
+
+        const su2double f_dt = 1.0 - tanh(pow(8.0*r_dt, 3.0));
+        const su2double f_t  = tanh(pow(pow(c_t, 2)*r_dt,  3.0));
+        const su2double f_l  = tanh(pow(pow(c_l, 2)*r_dl, 10.0));
+        const su2double f_e2 = 1.0 - max(f_t, f_l);
+        const su2double alpha = 0.25 - wallDistance/h_max;
+        const su2double f_B   = min(2.0*exp(-9.0*pow(alpha, 2)), 1.0);
+        
+        const su2double f_e1  = (alpha >= 0.0) ? 2.0*exp(-11.09*pow(alpha, 2))
+                                               : 2.0*exp(- 9.00*pow(alpha, 2));
+        /* ----------------------------verified------------------------*/                                      
+
+
+        /*--- Low-Reynolds number correction on the LES branch. ---*/
+        const su2double psi = sqrt(psi_2);
+        const su2double f_e   = f_e2 * psi * max(f_e1 - 1.0, 0.0);
+
+        const su2double f_dTilde = max(1.0 - f_dt, f_B);
+
+        const su2double distDES = constDES * psi * maxDelta;
+
+        lengthScale = f_dTilde*(1.0 + f_e)*wallDistance + (1.0 - f_dTilde)*distDES; /*blending function*/
+        lesSensor   = 1.0 - f_dTilde;
+
+        if (config->GetEnforceLES()) {
+          lengthScale = distDES;
+          lesSensor = 1.0;
+        }
+
+        break;
+      
+      }
     }
 
     nodes->SetDES_LengthScale(iPoint, lengthScale);

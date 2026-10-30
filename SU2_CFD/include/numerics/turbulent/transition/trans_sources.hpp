@@ -45,7 +45,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   /*--- LM Closure constants ---*/
   const su2double c_e1 = 1.0;
   const su2double c_a1 = 2.0;
-  const su2double c_e2 = 50.0;
+  su2double c_e2 = 50.0;  // 20.0 for Hao et al. (2017), set in the constructor
   const su2double c_a2 = 0.06;
   const su2double sigmaf = 1.0;
   const su2double s1 = 2.0;
@@ -83,6 +83,12 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     hRoughness = config->GethRoughness();
 
     TransCorrelations.SetOptions(options);
+
+    if (options.Correlation == TURB_TRANS_CORRELATION::HAO) {
+      /*--- Free-stream Mach and unit Reynolds number [1/m] for Hao et al. (2017), Eq. (13). ---*/
+      TransCorrelations.SetFreeStream(config->GetMach(), config->GetReynolds() / config->GetLength_Reynolds());
+      c_e2 = 20.0;
+    }
 
   }
 
@@ -154,7 +160,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       if (TurbFamily == TURB_FAMILY::SA) R_t = Eddy_Viscosity_i / Laminar_Viscosity_i;
 
       const su2double Re_v = Density_i * dist_i * dist_i * StrainMag_i / Laminar_Viscosity_i;
-      const su2double F_onset1 = Re_v / (2.193 * Corr_Rec);
+      const su2double F_onset1 = TransCorrelations.FOnset1_Correlations(Re_v, Corr_Rec);
       su2double F_onset2 = 1.0;
       su2double F_onset3 = 1.0;
       if (TurbFamily == TURB_FAMILY::KW) {
@@ -323,3 +329,4 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
 };
+  

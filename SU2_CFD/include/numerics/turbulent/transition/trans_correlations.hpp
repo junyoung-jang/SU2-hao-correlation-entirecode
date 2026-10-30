@@ -37,6 +37,9 @@ class TransLMCorrelations {
 
   LM_ParsedOptions options;
 
+  su2double Mach_inf = 0.0;      /*!< \brief Free-stream Mach number (Hao correlation). */
+  su2double Re_inf_per_m = 0.0;  /*!< \brief Free-stream unit Reynolds number [1/m] (Hao correlation, L_ref = 1 m). */
+
  public:
 
   /*!
@@ -45,6 +48,37 @@ class TransLMCorrelations {
    */
   void SetOptions(const LM_ParsedOptions val_options){
     options = val_options;
+  }
+
+  /*!
+   * \brief Set free-stream quantities used by the Hao et al. (2017)  orrelation.
+   * \param[in] val_Mach_inf - Free-stream Mach number.
+   * \param[in] val_Re_inf_per_m - Free-stream unit Reynolds number [1/m].
+   */
+  void SetFreeStream(const su2double val_Mach_inf, const su2double val_Re_inf_per_m) {
+    Mach_inf = val_Mach_inf;
+    Re_inf_per_m = val_Re_inf_per_m;
+  }
+
+  /*!
+   * \brief Compute F_onset1.
+   * \param[in] Re_v - Vorticity (strain-rate) Reynolds number.
+   * \param[in] Corr_Rec - Critical Re_theta (Re_theta_c).
+   * \param[out] F_onset1 - Value for the F_onset1 variable.
+   */
+  su2double FOnset1_Correlations(const su2double Re_v, const su2double Corr_Rec) const {
+    if (options.Correlation == TURB_TRANS_CORRELATION::HAO) {
+      /*--- Hao et al., IJHMT 107 (2017), Eqs. (13), (15), (16) ---*/
+      const su2double K = 2.1 - 0.0895 * Mach_inf;
+      const su2double D = 300.0 + 2.75e-5 * Re_inf_per_m;
+      const su2double F_r = exp(-((5.0 * Re_v) / (2.0 * pow(D, 2))));
+
+      return (Re_v - D * (1.0 - F_r)) / (K * Corr_Rec);
+  }
+      
+      
+    
+    return Re_v / (2.193 * Corr_Rec);
   }
 
   /*!
@@ -94,6 +128,8 @@ class TransLMCorrelations {
         break;
       }
 
+      /*--- Hao et al. (2017) keep the original Langtry-Menter Re_theta_c correlation. ---*/
+      case TURB_TRANS_CORRELATION::HAO:
       case TURB_TRANS_CORRELATION::MENTER_LANGTRY: {
         if (Re_theta_t <= 1870) {
           const su2double FirstTerm = (-396.035 * pow(10, -2));
@@ -179,6 +215,11 @@ class TransLMCorrelations {
         } else {
           F_length1 = 0.3188;
         }
+        break;
+      }
+      case TURB_TRANS_CORRELATION::HAO: {
+        F_length1 = 10;
+
         break;
       }
       case TURB_TRANS_CORRELATION::DEFAULT:
